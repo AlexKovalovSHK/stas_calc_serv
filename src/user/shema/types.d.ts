@@ -1,0 +1,1 @@
+export type UserWithId = Omit<User, "_id"> & { _id: string }; // Новый тип с _id
