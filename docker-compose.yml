@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    image: stas_calc_serv:latest  # Указываем имя образа
+    container_name: stas_calc_serv
+    ports:
+      - "5002:5002"  # Пробрасываем порт 5001 на хост
+    env_file:
+      - .env  # Указываем файл с переменными среды
+    restart: unless-stopped
+
+  

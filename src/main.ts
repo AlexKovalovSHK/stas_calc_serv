@@ -34,9 +34,9 @@ async function bootstrap() {
     origin: "http://localhost:5173", // Разрешаем фронтенд
     credentials: true, // Разрешаем передачу кук
   });
-  // https://heizreport.dev
+  // https://stas.shk.solutions
   // http://localhost:5173
-  // https://adminpanel.shk.solutions
+  // https://stas.shk.solutions
 
   await app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
