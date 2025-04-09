@@ -89,6 +89,7 @@ export class DocumentPdfService {
     const smallLineHeight = 10;
     const fontSize = 10;
     const smallFontSize = 8;
+    const sectionGap = 20; 
 
     // Helper function to draw text
     const drawText = (text: string, x: number, y: number, options: {
@@ -125,7 +126,7 @@ export class DocumentPdfService {
       infoY -= smallLineHeight;
     });
     
-    y -= 2 * lineHeight;
+    y -= 2 * lineHeight + sectionGap;
 
     // Billing address
     drawText('Rechnungsadresse', margin, y, { bold: true, size: smallFontSize });
@@ -136,7 +137,7 @@ export class DocumentPdfService {
     y -= smallLineHeight;
     drawText(`${rechnungDto.plz} ${rechnungDto.ort}`, margin, y, { size: smallFontSize });
     
-    y -= lineHeight;
+    y -= lineHeight + sectionGap;
     
     // Delivery address
     drawText('Lieferadresse', margin, y, { bold: true, size: smallFontSize });
@@ -147,70 +148,75 @@ export class DocumentPdfService {
     y -= smallLineHeight;
     drawText(`${rechnungDto.objektPlz} ${rechnungDto.objektOrt}`, margin, y, { size: smallFontSize });
     
-    y -= 2 * lineHeight;
+    y -= 2 * lineHeight + sectionGap;
 
-    // Table headers
-    const columnWidths = [250, 90, 90, 90];
-    const tableHeaders = ['Beschreibung', 'Menge', 'Einzelpreis', 'Betrag'];
-    
-    let tableX = margin;
-    tableHeaders.forEach((header, i) => {
-      drawText(header, tableX, y, { bold: true });
-      tableX += columnWidths[i];
-    });
-    
-    // Draw line under headers
-    page.drawLine({
-      start: { x: margin, y: y - 2 },
-      end: { x: page.getWidth() - margin, y: y - 2 },
-      thickness: 1,
-      color: rgb(0.8, 0.8, 0.8),
-    });
-    
-    y -= lineHeight;
+ // Table headers
+const columnWidths = [250, 90, 90, 90];
+const tableHeaders = ['Beschreibung', 'Menge', 'Einzelpreis', 'Betrag'];
+const cellPadding = 8; // Дополнительный вертикальный отступ в ячейках
 
-    // Table rows
-    rechnungDto.rechnungUnits?.forEach(unit => {
-      tableX = margin;
-      const rowItems = [
-        unit.beschreibung,
-        unit.menge.toString(),
-        `${unit.einzelpreis.toFixed(2)}€`,
-        `${unit.betrag.toFixed(2)}€`,
-      ];
-      
-      rowItems.forEach((item, i) => {
-        drawText(item, tableX, y, { size: fontSize });
-        tableX += columnWidths[i];
-      });
-      
-      // Draw line under row
-      page.drawLine({
-        start: { x: margin, y: y - 15 },
-        end: { x: page.getWidth() - margin, y: y - 15 },
-        thickness: 0.5,
-        color: rgb(0.9, 0.9, 0.9),
-      });
-      
-      y -= lineHeight;
-    });
-    
-    y -= lineHeight;
+let tableX = margin;
+tableHeaders.forEach((header, i) => {
+  drawText(header, tableX, y - cellPadding/2, { bold: true }); // Смещаем текст вниз в заголовке
+  tableX += columnWidths[i];
+});
 
-    // Total row
-    const totalAmount = rechnungDto.rechnungUnits
-      .reduce((sum, unit) => sum + unit.betrag, 0)
-      .toFixed(2);
-    
-    drawText('Gesamtbetrag:', page.getWidth() - margin - 160, y, { bold: true });
-    drawText(`${totalAmount}€`, page.getWidth() - margin - 80, y, { bold: true });
-    
-    y -= 2 * lineHeight;
+// Draw line under headers
+page.drawLine({
+  start: { x: margin, y: y - cellPadding },
+  end: { x: page.getWidth() - margin, y: y - cellPadding },
+  thickness: 1,
+  color: rgb(0.8, 0.8, 0.8),
+});
+
+y -= lineHeight + cellPadding; // Увеличиваем отступ после заголовка
+
+// Table rows
+rechnungDto.rechnungUnits?.forEach(unit => {
+  tableX = margin;
+  const rowItems = [
+    unit.beschreibung,
+    unit.menge.toString(),
+    `${unit.einzelpreis.toFixed(2)}€`,
+    `${unit.betrag.toFixed(2)}€`,
+  ];
+  
+  // Рисуем текст в ячейке со смещением вниз
+  rowItems.forEach((item, i) => {
+    drawText(item, tableX, y - cellPadding/2, { size: fontSize });
+    tableX += columnWidths[i];
+  });
+  
+  // Линия под строкой с увеличенным отступом
+  page.drawLine({
+    start: { x: margin, y: y - cellPadding },
+    end: { x: page.getWidth() - margin, y: y - cellPadding },
+    thickness: 0.5,
+    color: rgb(0.9, 0.9, 0.9),
+  });
+  
+  y -= lineHeight + cellPadding; // Увеличиваем отступ между строками
+});
+
+y -= smallLineHeight;
+
+// Total row
+const totalAmount = rechnungDto.rechnungUnits
+  .reduce((sum, unit) => sum + unit.betrag, 0)
+  .toFixed(2);
+
+// Итоговая строка с увеличенными отступами
+drawText('Gesamtbetrag:', page.getWidth() - margin - 160, y - cellPadding/2, { bold: true });
+drawText(`${totalAmount}€`, page.getWidth() - margin - 80, y - cellPadding/2, { bold: true });
+
+y -= 2 * lineHeight ;
+
+y -= lineHeight + cellPadding;
 
     // Footer text
     drawText(`Gemäß §${rechnungDto.paragraph} Abs. 1 UStG enthält der ausgewiesene Betrag keine Umsatzsteuer.`, 
       margin, y, { size: smallFontSize });
-    y -= smallLineHeight;
+      y -= 2 * lineHeight;
     drawText('Bitte überweisen Sie den Gesamtpreis innerhalb von 7 Tagen auf das unten angegebene Bankkonto.', 
       margin, y, { size: smallFontSize });
     
@@ -224,17 +230,35 @@ export class DocumentPdfService {
       color: rgb(0, 0, 0),
     });
     
-    y -= lineHeight;
+    y -= 2 * lineHeight;
 
-    // Bank details
-    const bankDetails = [
-      'Kontoinhaber: Marius Ursoi Bank: Sparkasse Hannover SWIFT/BIC: SPKHDE2HXXX IBAN: DE43250501800910582947 Adresse: Im Barm 13 - 30916 - Isernhagen E-Mail: mariusursoi18@gmail.com Mobil: 017684677759 Paypal: mariusursoi18@gmail.com'
-    ];
-    
-    bankDetails.forEach(line => {
-      drawText(line, margin, y, { size: smallFontSize });
-      y -= smallLineHeight;
-    });
+      // Bank details - теперь центрированы
+      const bankDetails = [
+        'Kontoinhaber: Marius Ursoi Bank: Sparkasse Hannover SWIFT/BIC: SPKHDE2HXXX IBAN: DE43250501800910582947',
+        'Adresse: Im Barm 13 - 30916 - Isernhagen E-Mail: mariusursoi18@gmail.com Mobil: 017684677759', 
+        'Paypal: mariusursoi18@gmail.com'
+      ];
+      
+      // Функция для центрирования текста
+      const drawCenteredText = (text: string, y: number, options: {
+        size?: number,
+        bold?: boolean
+      } = {}) => {
+        const textWidth = helveticaFont.widthOfTextAtSize(text, options.size || smallFontSize);
+        const x = (page.getWidth() - textWidth) / 2;
+        page.drawText(text, {
+          x,
+          y,
+          size: options.size || smallFontSize,
+          font: options.bold ? helveticaBold : helveticaFont,
+          color: rgb(0, 0, 0),
+        });
+      };
+  
+      bankDetails.forEach(line => {
+        drawCenteredText(line, y, { size: smallFontSize });
+        y -= smallLineHeight;
+      });
 
     return await pdfDoc.save();
   }
