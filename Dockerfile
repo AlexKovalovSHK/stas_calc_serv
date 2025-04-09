@@ -22,22 +22,13 @@ FROM node:20-alpine
 # Set the working directory
 WORKDIR /app
 
-# Add community repository and install dependencies for Puppeteer and Chromium
+# Add necessary dependencies for Chromium and Puppeteer
 RUN apk update && apk add --no-cache \
     chromium \
-    chromium-chromedriver \
-    libnss3-dev \
-    libgconf \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups \
-    libdbus \
-    libgdk-pixbuf \
-    libnspr \
-    libxss \
-    libxtst \
-    xdg-utils \
-    fonts-liberation \
+    nss \
+    freetype \
+    harfbuzz \
+    ttf-freefont \
     && rm -rf /var/cache/apk/*
 
 # Set the environment variable for Puppeteer to use Chromium
