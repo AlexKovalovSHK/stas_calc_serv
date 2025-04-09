@@ -31,7 +31,7 @@ async function bootstrap() {
   app.use(cookieParser()); // ✅ Подключаем обработку кук
   //app.enableCors();
   app.enableCors({
-    origin: "http://localhost:5173", // Разрешаем фронтенд
+    origin: "https://stas.shk.solutions", // Разрешаем фронтенд
     credentials: true, // Разрешаем передачу кук
   });
   // https://stas.shk.solutions
