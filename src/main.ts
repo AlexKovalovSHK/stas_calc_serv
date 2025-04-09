@@ -4,7 +4,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as basicAuth from 'express-basic-auth';
 
-
 async function bootstrap() {
   const PORT = process.env.PORT || 3000;
   const app = await NestFactory.create(AppModule);
@@ -31,7 +30,7 @@ async function bootstrap() {
   app.use(cookieParser()); // ✅ Подключаем обработку кук
   //app.enableCors();
   app.enableCors({
-    origin: "https://stas.shk.solutions", // Разрешаем фронтенд
+    origin: 'https://stas.shk.solutions', // Разрешаем фронтенд
     credentials: true, // Разрешаем передачу кук
   });
   // https://stas.shk.solutions
