@@ -1,10 +1,10 @@
 import { pdfBody } from '.';
 import { Response } from 'express';
 import * as fs from 'fs';
-import * as path from 'path'; // Обратите внимание на этот импорт
-import * as pdf from 'html-pdf';
+import * as path from 'path'; 
 import { Client } from 'ssh2';
 import { NewRechnungDto } from 'src/rechnung/dto/new-rechnung.dto';
+import puppeteer from 'puppeteer'; 
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -74,39 +74,47 @@ export class DocumentPdfService {
     });
   }
 
-  // Метод для создания PDF и загрузки его на удалённый сервер
-  async createPdf(rechnungDto: NewRechnungDto): Promise<string> {
-    console.log(rechnungDto);
 
-    const htmlContent = pdfBody(rechnungDto);
+async createPdf(rechnungDto: NewRechnungDto): Promise<string> {
+  console.log(rechnungDto);
 
-    const fileName = `${rechnungDto._id}.pdf`;
+  const htmlContent = pdfBody(rechnungDto);
+  const fileName = `${rechnungDto._id}.pdf`;
+  const localFilePath = path.join(__dirname, fileName);
 
-    //const fileName = `rechnung_${rechnungDto.dataTime}_${new Date(rechnungDto.dataTime).toISOString().slice(0, 10)}.pdf`;
+  // ✅ Генерация PDF с puppeteer
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
 
-    const localFilePath = path.join(__dirname, fileName); // Локальный путь для создания PDF
+  const page = await browser.newPage();
+  await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-    // Генерация PDF
-    await new Promise<void>((resolve, reject) => {
-      pdf.create(htmlContent, {}).toFile(localFilePath, (err) => {
-        if (err) reject(err);
-        resolve();
-      });
-    });
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
+  });
 
-    // Убедитесь, что папка на сервере существует
-    const remoteDir = '/root/doc_pdf';
-    await this.sftpConnect(); // Подключение к серверу
-    // Загрузка файла на удаленный сервер
-    const remoteFilePath = path.join(remoteDir, fileName);
-    await this.sftpUploadFile(localFilePath, remoteFilePath);
+  await browser.close();
 
-    // Удаление локального файла
-    fs.unlinkSync(localFilePath);
+  // ✅ Сохраняем PDF в файл
+  fs.writeFileSync(localFilePath, pdfBuffer);
 
-    console.log('File uploaded to remote server:', remoteFilePath);
-    return fileName;
-  }
+  // 📂 Удалённая загрузка по SSH
+  const remoteDir = '/root/doc_pdf';
+  await this.sftpConnect(); // подключение по SSH
+  const remoteFilePath = path.join(remoteDir, fileName);
+  await this.sftpUploadFile(localFilePath, remoteFilePath);
+
+  // 🧹 Удаляем локальный файл
+  fs.unlinkSync(localFilePath);
+
+  console.log('File uploaded to remote server:', remoteFilePath);
+  return fileName;
+}
+
 
   
     // Метод для удаления файла на удалённом сервере
@@ -127,7 +135,7 @@ export class DocumentPdfService {
         });
       });
     }
-    
+
     // Метод для удаления файла по имени
     async deleteByFileName(fileName: string): Promise<void> {
       try {
