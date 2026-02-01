@@ -1,5 +1,5 @@
 export class User {
-  id: string; // В домене лучше использовать string, который в Mongo станет ObjectId
+  id: string;
   name: string;
   surname: string;
   email: string;

@@ -18,18 +18,18 @@ export class UserMapper {
     });
   }
 
-  static toPersistence(entity: Partial<UserEntity>) {
+  static toPersistence(ata: any) {
     return {
       // Убедитесь, что имена полей СЛЕВА совпадают с именами в @Prop вашей схемы!
-      name: entity.name,
-      surname: entity.surname,
-      email: entity.email,
-      password: entity.password,
-      role: entity.role || 'Student',
-      phone: entity.phone,
-      telegram_id: entity.telegramId,
-      telegram_username: entity.telegramUsername,
-      avatar: entity.avatar,
+      name: ata.name,
+      surname: ata.surname,
+      email: ata.email,
+      password: ata.password,
+      role: ata.role || 'Student',
+      phone: ata.phone,
+      telegram_id: ata.telegramId ?? ata.telegram_id,
+      telegram_username: ata.telegramUsername ?? ata.telegram_username,
+      avatar: ata.avatar,
     };
   }
 }

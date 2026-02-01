@@ -4,8 +4,8 @@ import { Document } from 'mongoose';
 export type UserDocument = UserMongoModel & Document;
 
 @Schema({ 
-    collection: 'ifob_scool_users', // Указываем имя коллекции
-    timestamps: true // Автоматически добавит createdAt и updatedAt
+    collection: 'ifob_scool_users',
+    timestamps: true
 })
 export class UserMongoModel {
     @Prop({ required: true })
@@ -17,7 +17,7 @@ export class UserMongoModel {
     @Prop({ required: true, unique: true, lowercase: true })
     email: string;
 
-    @Prop({ required: true }) // Пароль обязателен для обычной регистрации
+    @Prop({ required: true })
     password: string;
 
     @Prop({ default: 'Student' })
@@ -29,8 +29,7 @@ export class UserMongoModel {
     @Prop()
     avatar: string;
 
-    // Telegram данные
-    @Prop({ unique: true, sparse: true }) // sparse позволяет иметь несколько null значений
+    @Prop({ unique: true, sparse: true })
     telegram_id: number;
 
     @Prop()

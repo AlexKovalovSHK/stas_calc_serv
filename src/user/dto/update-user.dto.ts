@@ -16,7 +16,6 @@ export class UpdateUserDto {
     @IsOptional() @IsString()
     avatar?: string;
 
-    // Данные для привязки Telegram
     @IsOptional() @IsNumber()
     telegram_id?: number;
 
@@ -24,5 +23,5 @@ export class UpdateUserDto {
     telegram_username?: string;
 
     @IsOptional() @IsString()
-    telegram_auth_hash?: string; // Для проверки валидности данных от TG
+    telegram_auth_hash?: string;
 }
