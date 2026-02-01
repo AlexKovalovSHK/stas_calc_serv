@@ -30,7 +30,7 @@ async function bootstrap() {
   app.use(cookieParser()); // ✅ Подключаем обработку кук
   //app.enableCors();
   app.enableCors({
-    origin: 'https://stas.shk.solutions', // Разрешаем фронтенд
+    origin: 'https://ifob-scool.shk.solutions', // Разрешаем фронтенд
     credentials: true, // Разрешаем передачу кук
   });
   // https://stas.shk.solutions
