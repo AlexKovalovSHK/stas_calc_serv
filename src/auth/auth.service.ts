@@ -1,20 +1,16 @@
 import {
-  HttpException,
-  HttpStatus,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
-  Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Response, Request } from 'express';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { UserService } from 'src/user/service/user.service';
-import { LoginUserDto } from 'src/user/dto/login-user.dto';
+import { User } from 'src/user/domain/entities/user.entity';
+import { TelegramAuthDto } from 'src/user/dto/telegram-auth.dto';
 import { CreateUserDto } from 'src/user/dto/new-user.dto';
-import { User, UserDocument } from 'src/user/shema/user.shema';
-import { HydratedDocument } from 'mongoose';
-import { UserWithId } from 'src/user/shema/types';
 
 @Injectable()
 export class AuthService {
@@ -23,113 +19,125 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  private secretKey: string = process.env.PRIVATE_KEY || 'secret_key';
+  // --- ОБЫЧНЫЙ ЛОГИН ---
+  async login(loginDto: any) {
+    const user = await this.validateUser(loginDto);
+    return this.generateTokenResponse(user);
+  }
 
-  async login(
-    loginUserDto: LoginUserDto,
-    @Res() res: Response
-  ): Promise<UserWithId | null> {
-    try {
-      
-       const userToken = await this.validateUser(loginUserDto)
-  
-      // Генерируем JWT-токен
-      const token = this.jwtService.sign({
-        userId: userToken._id,
-        userMail: userToken.email,
-      });
-      
-      // Устанавливаем токен в cookie
-      res.cookie('token', token, {
-        httpOnly: true,  // Защита от XSS
-        secure: false,    // Только HTTPS (убери, если тестируешь локально)
-        sameSite: 'strict', // Защита от CSRF
-        maxAge: 7 * 24 * 60 * 60 * 1000, // Куки живёт 7 дней
-      });
-  
-  
-      const user = await this.userService.getUserByEmail(loginUserDto.email);
-      return user;
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error; // Отправляем 401 Unauthorized на клиент
-      }
-  
-      console.error("Login error:", error);
-      throw new InternalServerErrorException("Something went wrong");
+  // --- ЛОГИН ЧЕРЕЗ TELEGRAM ---
+  async loginWithTelegram(tgData: TelegramAuthDto) {
+    // 1. Проверяем хэш (безопасность)
+    const isValid = this.verifyTelegramHash(tgData);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid Telegram data');
     }
-  }
 
-  async me(res: any, req: Request): Promise<UserWithId> {
-    try {
-      const token = req.cookies.token;
-      if (!token) {
-        return res.status(403).json({ message: 'Problems with token1' });
-      }
-      const decoded = this.jwtService.decode(token) as { userId: number };
+    // 2. Ищем пользователя по telegram_id
+    let user = await this.userService.findByTgId(String(tgData.id));
 
-      if (!decoded || typeof decoded !== 'object' || !('userId' in decoded)) {
-        return res.status(403).json({ message: 'Problems with token2' });
-      }
-      const userId = String(decoded.userId);
-      const user = await this.userService.getOne(userId);
-      return res.status(200).json(user);
-    } catch (error) {
-      return res.status(500).json({ message: `Error: ${error}` });
-    }
-  }
-
-  async logout(res: Response) {
-    // Сбрасываем cookie с токеном
-    res.clearCookie('token'); // Убедитесь, что имя cookie совпадает с тем, что вы используете
-    return res
-      .status(200)
-      .json({ message: 'Sie haben sich erfolgreich abgemeldet' });
-  }
-
-  async registration(userDto: CreateUserDto): Promise<string> {
-    // Проверка на существование пользователя с таким email
-    const candidate = await this.userService.getUserByEmail(userDto.email);
-    if (candidate) {
-      throw new HttpException(
-        'Es existiert ein Benutzer mit dieser E-Mail',
-        HttpStatus.BAD_REQUEST,
+    if (!user) {
+      // Опционально: если пользователя нет, можем создать его (авто-регистрация)
+      // Или выдать ошибку, если вы хотите сначала только Email-регистрацию
+      throw new UnauthorizedException(
+        'Аккаунт не привязан к Telegram. Сначала войдите через Email.',
       );
     }
-    const hashPassword = await bcrypt.hash(userDto.password, 5);
-    const user = await this.userService.create({
-      ...userDto,
-      password: hashPassword,
-    });
-    const token = await this.generateToken(user);
 
-    return token;
+    return this.generateTokenResponse(user);
   }
 
-  private async generateToken(user: HydratedDocument<User>): Promise<string> {
-    const payload = { userMail: user.email, userId: user._id.toString() };
-    // Генерация токена и возврат как строка
-    return this.jwtService.sign(payload, { secret: this.secretKey });
-  }
+  // --- ВАЛИДАЦИЯ ХЭША TELEGRAM ---
+  private verifyTelegramHash(data: TelegramAuthDto): boolean {
+    const { hash, ...userData } = data;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN; // Токен вашего бота
 
-  private async validateUser(userDto: LoginUserDto): Promise<UserWithId> {
-    const user = await this.userService.getUserByEmail(userDto.email); // ✅ lean() уже внутри метода
-    if (!user) {
-      throw new UnauthorizedException({
-        message: 'Falsche E-Mail-Adresse oder falsches Passwort',
-      });
+    // Сортируем ключи и собираем строку проверки
+    const dataCheckString = Object.keys(userData)
+      .sort()
+      .map((key) => `${key}=${userData[key]}`)
+      .join('\n');
+
+    if (!botToken) {
+      throw new InternalServerErrorException(
+        'Telegram Bot Token is not configured in .env',
+      );
     }
 
-    const passwordEquals = await bcrypt.compare(
-      userDto.password,
+    // Создаем секретный ключ
+    const secretKey = crypto.createHash('sha256').update(botToken).digest();
+
+    // Вычисляем HMAC-SHA256
+    const hmac = crypto
+      .createHmac('sha256', secretKey)
+      .update(dataCheckString)
+      .digest('hex');
+
+    return hmac === hash;
+  }
+
+  // Вспомогательный метод для генерации ответа с токеном
+  private generateTokenResponse(user: User) {
+    const payload = { sub: user.id, email: user.email };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        telegram_username: user.telegramUsername,
+      },
+    };
+  }
+
+  private async validateUser(dto: any): Promise<User> {
+    const user = await this.userService.findByEmail(dto.email);
+
+    // Если пользователя нет или у него не задан пароль (зарегистрирован только через ТГ)
+    if (!user || !user.password) {
+      throw new UnauthorizedException(
+        'Неверные учетные данные или пароль не установлен',
+      );
+    }
+
+    // Теперь TS знает, что user.password — это точно string
+    const isPasswordMatching = await bcrypt.compare(
+      dto.password,
       user.password,
     );
-    if (passwordEquals) {
+
+    if (isPasswordMatching) {
       return user;
     }
 
-    throw new UnauthorizedException({
-      message: 'Falsche E-Mail-Adresse oder falsches Passwort',
-    });
+    throw new UnauthorizedException('Неверные учетные данные');
+  }
+
+  async registration(dto: CreateUserDto) {
+    // 1. Проверяем, не занят ли email
+    const candidate = await this.userService.findByEmail(dto.email);
+    if (candidate) {
+      throw new ConflictException('Пользователь с таким email уже существует');
+    }
+
+    try {
+      // 2. Хешируем пароль
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+      // 3. Создаем пользователя через сервис (Repository)
+      const newUser = await this.userService.create({
+        ...dto,
+        password: hashedPassword,
+        role: 'Student', // Роль по умолчанию
+      });
+
+      // 4. Сразу выдаем токен, чтобы пользователь не логинился повторно после регистрации
+      return this.generateTokenResponse(newUser);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw new InternalServerErrorException(
+        'Ошибка при создании пользователя',
+      );
+    }
   }
 }

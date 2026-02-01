@@ -3,3 +3,7 @@ export class CreateTrackDto {
     readonly email: string;
     readonly password: string;
 }
+
+export class UserRespDto {
+    
+}

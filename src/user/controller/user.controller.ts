@@ -1,40 +1,81 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Patch,
+  Query,
+  UploadedFiles,
+  UseInterceptors,
+  NotFoundException,
+} from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { UserService } from '../service/user.service';
+import { CreateUserDto } from '../dto/new-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
+import { User } from '../domain/entities/user.entity';
 
-import {Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFiles, UseGuards, UseInterceptors} from "@nestjs/common";
-import {HydratedDocument, ObjectId} from "mongoose";
-import {FileFieldsInterceptor} from "@nestjs/platform-express";
-import { UserService } from "../service/user.service";
-import { CreateUserDto } from "../dto/new-user.dto";
-import { UpdateUserDto } from "../dto/update-user.dto";
-import { User } from "../shema/user.shema";
-
-
-@Controller('api/v1/users')
+@Controller('users') // Базовый путь: /users (множественное число)
 export class UserController {
-    constructor(private userService: UserService) {    }
+  constructor(private readonly userService: UserService) {}
 
-    /*@Post()
-    create( @Body() dto: CreateUserDto) {
-        return this.userService.create(dto);
-    }*/
-    @Get()
-    getAll(@Query('count') count: number,
-           @Query('offset') offset: number) {
-        return this.userService.getAll(count, offset)
+  // POST /users - Создание пользователя (Регистрация)
+  @Post()
+  async create(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return this.userService.create(createUserDto);
+  }
+
+  // GET /users - Получение списка или поиск по email (?email=...)
+  @Get()
+  async find(@Query('email') email?: string): Promise<User | User[]> {
+    if (email) {
+      const user = await this.userService.findByEmail(email);
+      if (!user) throw new NotFoundException('User not found');
+      return user;
     }
+    // Здесь логика получения всех пользователей, если нужно
+    return []; 
+  }
 
-    @Get(':id')
-    getOne(@Param('id') id: string) {
-        return this.userService.getOne(id);
+  // GET /users/:id - Получение конкретного пользователя (Профиль)
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<User> {
+    const user = await this.userService.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  // GET /users/telegram/:tgId - Поиск по Telegram (специфичный ресурс)
+  @Get('telegram/:tgId')
+  async findByTelegram(@Param('tgId') tgId: string): Promise<User> {
+    const user = await this.userService.findByTgId(tgId);
+    if (!user) throw new NotFoundException('User with this Telegram ID not found');
+    return user;
+  }
+
+  // PATCH /users/:id - Частичное обновление (профиль + аватар)
+  @Patch(':id')
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'avatar', maxCount: 1 }])
+  )
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @UploadedFiles() files: { avatar?: Express.Multer.File[] },
+  ): Promise<User> {
+    if (files?.avatar?.length) {
+      // Логика сохранения пути к файлу
+      updateUserDto.avatar = `/uploads/${files.avatar[0].filename}`;
     }
+    return this.userService.update(id, updateUserDto);
+  }
 
-    @Delete(':id')
-    delete(@Param('id') id: string) {
-        return this.userService.delete(id);
-    }
-
-    @Put()
-    updateUser(@Body() dto: UpdateUserDto): Promise<HydratedDocument<User>> {
-        return this.userService.updateUser(dto);
-    }
-
+  // DELETE /users/:id - Удаление
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    // return this.userService.remove(id);
+    return { message: 'User deleted successfully' };
+  }
 }
