@@ -30,13 +30,16 @@ export class UserService implements IUserRepository {
     return user ? UserMapper.toDomain(user) : null;
   }
 
-  async create(user: Partial<UserEntity>): Promise<UserEntity> {
-    // Преобразуем данные домена в формат БД через маппер
-    const persistenceModel = UserMapper.toPersistence(user);
-    const newUser = new this.userModel(persistenceModel);
-    const savedUser = await newUser.save();
-    return UserMapper.toDomain(savedUser);
-  }
+ async create(user: Partial<UserEntity>): Promise<UserEntity> {
+  const persistenceModel = UserMapper.toPersistence(user);
+  console.log('Данные для MongoDB:', persistenceModel); // <-- Проверьте это в консоли терминала
+  
+  const newUser = new this.userModel(persistenceModel);
+  const savedUser = await newUser.save();
+  
+  console.log('Сохранено в базу:', savedUser); // <-- Если здесь есть объект с _id, значит в базе он ТОЧНО есть
+  return UserMapper.toDomain(savedUser);
+}
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserEntity> {
     // Преобразуем DTO в формат полей БД
@@ -51,5 +54,19 @@ export class UserService implements IUserRepository {
     }
 
     return UserMapper.toDomain(updatedUser);
+  }
+
+  async getUserList(): Promise<User[]> {
+    try {
+      const users = await this.userModel.find().exec();
+      
+      if (!users || users.length === 0) {
+        return [];
+      }
+      
+      return users.map(user => UserMapper.toDomain(user));
+    } catch (error) {
+      throw new BadRequestException(`Ошибка при получении списка пользователей: ${error.message}`);
+    }
   }
 }

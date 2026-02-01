@@ -21,6 +21,8 @@ export class AuthService {
 
   // --- ОБЫЧНЫЙ ЛОГИН ---
   async login(loginDto: any) {
+    //console.log(loginDto);
+    
     const user = await this.validateUser(loginDto);
     return this.generateTokenResponse(user);
   }
@@ -78,17 +80,16 @@ export class AuthService {
 
   // Вспомогательный метод для генерации ответа с токеном
   private generateTokenResponse(user: User) {
-    const payload = { sub: user.id, email: user.email };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        telegram_username: user.telegramUsername,
-      },
-    };
-  }
+  const payload = { sub: user.id, email: user.email };
+  
+  // Извлекаем все поля, кроме пароля, чтобы не отправить его на фронтенд
+  const { password, ...userWithoutPassword } = user;
+
+  return {
+    access_token: this.jwtService.sign(payload),
+    user: userWithoutPassword, // Теперь здесь полноценный объект User
+  };
+}
 
   private async validateUser(dto: any): Promise<User> {
     const user = await this.userService.findByEmail(dto.email);

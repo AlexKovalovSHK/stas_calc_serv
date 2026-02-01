@@ -7,4 +7,6 @@ export interface IUserRepository {
   findByTgId(tgId: string): Promise<User | null>;
   create(user: Partial<User>): Promise<User>;
   update(id: string, user: UpdateUserDto): Promise<User>;
+
+  getUserList(): Promise<User[]>
 }

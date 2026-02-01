@@ -30,12 +30,27 @@ async function bootstrap() {
   app.use(cookieParser()); // ✅ Подключаем обработку кук
   //app.enableCors();
   app.enableCors({
-    origin: 'https://ifob-scool.shk.solutions', // Разрешаем фронтенд
-    credentials: true, // Разрешаем передачу кук
+    origin: (origin, callback) => {
+      if (!origin) {
+        // Разрешаем запросы без origin (например, мобильные приложения, curl)
+        return callback(null, true);
+      }
+
+      const allowedOrigins = [
+        'https://ifob-scool.shk.solutions',
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+      ];
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin '${origin}' not allowed by CORS`));
+      }
+    },
+    credentials: true,
   });
-  // https://stas.shk.solutions
-  // http://localhost:5173
-  // https://stas.shk.solutions
 
   await app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }

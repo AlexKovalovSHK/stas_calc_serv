@@ -10,6 +10,7 @@ import {
   UploadedFiles,
   UseInterceptors,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { UserService } from '../service/user.service';
@@ -29,23 +30,16 @@ export class UserController {
 
   // GET /users - Получение списка или поиск по email (?email=...)
   @Get()
-  async find(@Query('email') email?: string): Promise<User | User[]> {
-    if (email) {
-      const user = await this.userService.findByEmail(email);
-      if (!user) throw new NotFoundException('User not found');
-      return user;
-    }
-    // Здесь логика получения всех пользователей, если нужно
-    return []; 
+  async getUserList(): Promise<User[]> {
+    return this.userService.getUserList();
   }
 
   // GET /users/:id - Получение конкретного пользователя (Профиль)
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<User> {
-    const user = await this.userService.findById(id);
-    if (!user) throw new NotFoundException('User not found');
-    return user;
-  }
+  //@UseGuards(JwtAuthGuard)
+@Get(':id')
+async findOne(@Param('id') id: string) {
+  return this.userService.findById(id);
+}
 
   // GET /users/telegram/:tgId - Поиск по Telegram (специфичный ресурс)
   @Get('telegram/:tgId')
