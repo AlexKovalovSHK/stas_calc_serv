@@ -4,13 +4,15 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './AppController';
+import { CoursesModule } from './courses/courses.module';
+import { PaymentsModule } from './paypal/payments.module';
 
 
 @Module({
   imports: [
     // Загрузка .env файла
     ConfigModule.forRoot({
-      isGlobal: true, // Делаем конфиг глобально доступным
+      isGlobal: true,
       envFilePath: '.env',
     }),
     // Подключение MongoDB
@@ -24,8 +26,10 @@ import { AppController } from './AppController';
     }),
     UserModule,
     AuthModule,
+    CoursesModule,
+    PaymentsModule
   ],
   controllers: [AppController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }
