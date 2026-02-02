@@ -33,10 +33,10 @@ import { APP_GUARD } from '@nestjs/core';
   ],
   controllers: [AppController],
   providers: [
-    {
+    /*{
       provide: APP_GUARD,
       useClass: JwtAuthGuard, // Теперь гвард будет проверять каждый запрос
-    },
+    },*/
   ],
 })
 export class AppModule { }

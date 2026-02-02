@@ -1,8 +1,9 @@
-import { Body, Controller, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { PaypalService } from "./paypal.service";
 import { PaymentsService } from "./payments.service";
 import { Request, Response } from "express";
 import { Public } from "src/auth/public.decorator";
+import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
 
 @Controller('payments')
 export class PaymentsController {
@@ -17,6 +18,7 @@ export class PaymentsController {
     return this.paypalService.createOrder(price);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('capture-order')
   async captureOrder(
     @Body('orderId') orderId: string,

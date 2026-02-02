@@ -17,6 +17,7 @@ import { UserService } from '../service/user.service';
 import { CreateUserDto } from '../dto/new-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { User } from '../domain/entities/user.entity';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('users') // Базовый путь: /users (множественное число)
 export class UserController {
@@ -35,7 +36,7 @@ export class UserController {
   }
 
   // GET /users/:id - Получение конкретного пользователя (Профиль)
-  //@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
 @Get(':id')
 async findOne(@Param('id') id: string) {
   return this.userService.findById(id);
