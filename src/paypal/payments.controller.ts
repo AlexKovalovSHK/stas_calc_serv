@@ -2,14 +2,16 @@ import { Body, Controller, Post, Req, Res } from "@nestjs/common";
 import { PaypalService } from "./paypal.service";
 import { PaymentsService } from "./payments.service";
 import { Request, Response } from "express";
+import { Public } from "src/auth/public.decorator";
 
 @Controller('payments')
 export class PaymentsController {
   constructor(
     private readonly paypalService: PaypalService,
-    private readonly paymentsService: PaymentsService, // <-- инжектим сервис правильно
+    private readonly paymentsService: PaymentsService,
   ) {}
 
+  @Public()
   @Post('create-order')
   createOrder(@Body('price') price: number) {
     return this.paypalService.createOrder(price);

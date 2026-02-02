@@ -32,7 +32,6 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) {
-        // Разрешаем запросы без origin (например, мобильные приложения, curl)
         return callback(null, true);
       }
 
