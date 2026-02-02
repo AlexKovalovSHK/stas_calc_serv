@@ -26,16 +26,22 @@ export class PaymentsController {
     @Body('courseId') courseId: string
   ) {
     const result = await this.paypalService.captureOrder(orderId);
-
+  
+    // Для отладки — посмотрите полную структуру в логах докера
+    // console.log('PayPal Full Result:', JSON.stringify(result, null, 2));
+  
+    // ПРАВИЛЬНЫЙ ПУТЬ К СУММЕ ПОСЛЕ CAPTURE:
+    const amountValue = result.purchase_units[0].payments.captures[0].amount.value;
+  
     // Сохраняем платёж
     await this.paymentsService.createPayment({
       userId,
       courseId,
       orderId,
-      amount: parseFloat(result.purchase_units[0].amount.value),
+      amount: parseFloat(amountValue),
       status: result.status,
     });
-
+  
     return result;
   }
 
