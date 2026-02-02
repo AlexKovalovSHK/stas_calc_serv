@@ -1,46 +1,45 @@
 # Step 1: Build Stage
 FROM node:20-alpine AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if exists)
-COPY package.json package-lock.json ./
+# Копируем package файлы для лучшего кэширования слоев
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY nest-cli.json ./
 
-# Install dependencies
-RUN npm install
+# Устанавливаем зависимости для сборки
+RUN npm ci --include=dev
 
-# Copy the rest of the application files
-COPY . .
+# Копируем исходный код
+COPY src ./src
 
-# Build the NestJS application
+# Собираем приложение
 RUN npm run build
 
-# Step 2: Runtime Stage
+# Удаляем dev-зависимости после сборки
+RUN npm prune --production
+
+# Step 2: Runtime Stage  
 FROM node:20-alpine
 
-# Set the working directory
 WORKDIR /app
 
-# Add necessary dependencies for Chromium and Puppeteer
-RUN apk update && apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ttf-freefont \
-    && rm -rf /var/cache/apk/*
+# Создаем непривилегированного пользователя для безопасности
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Set the environment variable for Puppeteer to use Chromium
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+# Копируем только production зависимости и сборку из builder
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 
-# Copy only the built files and node_modules from the builder stage
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY package.json ./
+# Устанавливаем корректные права
+RUN chown -R nodejs:nodejs /app
 
-# Expose the application's port (change if needed)
+# Переключаемся на непривилегированного пользователя
+USER nodejs
+
 EXPOSE 5002
 
-# Start the application
 CMD ["node", "dist/main"]
