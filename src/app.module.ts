@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 import { AppController } from './AppController';
 import { CoursesModule } from './courses/courses.module';
 import { PaymentsModule } from './paypal/payments.module';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { APP_GUARD } from '@nestjs/core';
 
 
 @Module({
@@ -30,6 +32,11 @@ import { PaymentsModule } from './paypal/payments.module';
     PaymentsModule
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // Теперь гвард будет проверять каждый запрос
+    },
+  ],
 })
 export class AppModule { }

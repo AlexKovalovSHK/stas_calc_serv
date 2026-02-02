@@ -3,13 +3,6 @@ import { Module } from "src/courses/entitys/module.entity";
 import { ModuleDocument, ModuleMongoModel } from "src/courses/models/shemas/module.shema";
 
 
-// Создаем расширенный тип с _id
-type ModuleMongoModelWithId = ModuleMongoModel & {
-    _id: any;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
-
 export class ModuleMapper {
     static toDomain(doc: ModuleDocument | ModuleMongoModel): Module {
         return new Module({
