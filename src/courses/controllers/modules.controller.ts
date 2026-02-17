@@ -43,8 +43,13 @@ export class ModulesController {
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
     async deleteModule(
-        @Param('id', ParseUUIDPipe) id: string,
+        @Param('id') id: string,
     ): Promise<void> {
         return this.coursesService.deleteModule(id);
+    }
+
+    @Get(':courseId/courses')
+    async getModulesByCourseId(@Param('courseId') courseId: string): Promise<ModuleResponseDto[]> {
+        return this.coursesService.getModulesByCourseId(courseId);
     }
 }

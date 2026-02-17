@@ -73,10 +73,10 @@ export class CoursesController {
     @HttpCode(HttpStatus.CREATED)
     async addModuleToCourse(
         @Body() createModuleDto: NewModuleDto,
-        @Req() req: Request,                    // ← добавьте
+        @Req() req: Request,
     ) {
-        console.log('Raw body (string):', req.body);           // сырая строка или объект
-        console.log('Parsed DTO:', createModuleDto);           // после валидации
+        console.log('Raw body (string):', req.body); 
+        console.log('Parsed DTO:', createModuleDto);  
         console.log('Content-Type:', req.headers['content-type']);
 
         if (!createModuleDto) {

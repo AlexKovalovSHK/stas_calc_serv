@@ -1,44 +1,31 @@
-import {
-    IsMongoId,
-    IsNotEmpty,
-    IsNumber,
-    IsOptional,
-    IsPositive,
-    IsString,
-    MaxLength,
-    Min,
-  } from 'class-validator';
-  
-  export class NewCourseDto {
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(200)
-    title: string;
-  
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(100)
-    slug: string;
-  
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(2000)
-    description: string;
-  
-    @IsNumber()
-    @IsPositive()
-    @Min(0)
-    priceAmount: number;
-  
-    @IsString()
-    @IsOptional()
-    priceCurrency?: string = 'RUB';
-  
-    @IsMongoId()
-    @IsNotEmpty()
-    authorId: string;
-  
-    @IsString()
-    @IsOptional()
-    note?: string;
-  }
+import { IsString, IsNumber, IsOptional, IsNotEmpty } from 'class-validator';
+
+export class NewCourseDto {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsNumber()
+  @IsOptional() // Позволяет присылать или не присылать цену
+  priceAmount: number;
+
+  @IsString()
+  @IsOptional() // Добавьте это поле, если его нет!
+  priceCurrency?: string;
+
+  @IsString() // Если используете UUID, не ставьте @IsMongoId
+  @IsNotEmpty()
+  authorId: string;
+
+  @IsString()
+  @IsOptional()
+  note?: string;
+}

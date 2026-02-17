@@ -45,7 +45,6 @@ import {
     author: string;
   
     @IsNumber()
-    @IsPositive()
     @Min(0)
     @Max(5)
     @IsOptional()

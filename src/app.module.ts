@@ -4,10 +4,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './AppController';
-import { CoursesModule } from './courses/courses.module';
 import { PaymentsModule } from './paypal/payments.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
+import { TeacherModule } from './teachers/teacher.module';
+import { CoursesModule } from './courses/courses.module';
 
 
 @Module({
@@ -29,7 +30,8 @@ import { APP_GUARD } from '@nestjs/core';
     UserModule,
     AuthModule,
     CoursesModule,
-    PaymentsModule
+    PaymentsModule,
+    TeacherModule
   ],
   controllers: [AppController],
   providers: [
