@@ -9,6 +9,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { TeacherModule } from './teachers/teacher.module';
 import { CoursesModule } from './courses/courses.module';
+import { TelegrafModule } from 'nestjs-telegraf';
 
 
 @Module({
@@ -24,6 +25,12 @@ import { CoursesModule } from './courses/courses.module';
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
         dbName: configService.get<string>('MONGODB_NAME'),
+      }),
+      inject: [ConfigService],
+    }),
+    TelegrafModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        token: configService.get<string>('TELEGRAM_BOT_TOKEN') || '',
       }),
       inject: [ConfigService],
     }),
