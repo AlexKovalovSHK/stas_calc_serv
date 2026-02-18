@@ -52,7 +52,7 @@ export class AuthService {
   // --- ВАЛИДАЦИЯ ХЭША TELEGRAM ---
   private verifyTelegramHash(data: TelegramAuthDto): boolean {
     const { hash, ...userData } = data;
-    const botToken = process.env.TELEGRAM_BOT_TOKEN; // Токен вашего бота
+    const botToken = process.env.TELEGRAM_BOT_TOKEN_LOGIN; // Токен вашего бота
 
     // Сортируем ключи и собираем строку проверки
     const dataCheckString = Object.keys(userData)

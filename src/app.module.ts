@@ -12,40 +12,40 @@ import { CoursesModule } from './courses/courses.module';
 import { TelegrafModule } from 'nestjs-telegraf';
 
 
-@Module({
-  imports: [
-    // Загрузка .env файла
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
+const modules = [
+  ConfigModule.forRoot({
+    isGlobal: true,
+    envFilePath: '.env',
+  }),
+  MongooseModule.forRootAsync({
+    imports: [ConfigModule],
+    useFactory: async (configService: ConfigService) => ({
+      uri: configService.get<string>('MONGODB_URI'),
+      dbName: configService.get<string>('MONGODB_NAME'),
     }),
-    // Подключение MongoDB
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-        dbName: configService.get<string>('MONGODB_NAME'),
-      }),
-      inject: [ConfigService],
-    }),
+    inject: [ConfigService],
+  }),
+  UserModule,
+  AuthModule,
+  CoursesModule,
+  PaymentsModule,
+  TeacherModule
+];
+
+if (process.env.ENABLE_TELEGRAM === 'true') {
+  modules.push(
     TelegrafModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         token: configService.get<string>('TELEGRAM_BOT_TOKEN') || '',
       }),
       inject: [ConfigService],
-    }),
-    UserModule,
-    AuthModule,
-    CoursesModule,
-    PaymentsModule,
-    TeacherModule
-  ],
+    })
+  );
+}
+
+@Module({
+  imports: modules,
   controllers: [AppController],
-  providers: [
-    /*{
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard, // Теперь гвард будет проверять каждый запрос
-    },*/
-  ],
+  providers: [],
 })
 export class AppModule { }
