@@ -12,11 +12,13 @@ export class User {
   createdAt?: Date;
   updatedAt?: Date;
 
+  resetCode?: string | null;
+  resetCodeExpires?: Date | null;
+  
   constructor(partial: Partial<User>) {
     Object.assign(this, partial);
   }
 
-  // Здесь можно добавить бизнес-логику (методы)
   getFullName() {
     return `${this.name} ${this.surname}`;
   }

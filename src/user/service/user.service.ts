@@ -25,19 +25,18 @@ export class UserService implements IUserRepository {
   }
 
   async findByTgId(tgId: string): Promise<UserEntity | null> {
-    // Преобразуем строку в число, так как в схеме telegram_id: number
     const user = await this.userModel.findOne({ telegram_id: Number(tgId) }).exec();
     return user ? UserMapper.toDomain(user) : null;
   }
 
  async create(user: Partial<UserEntity>): Promise<UserEntity> {
   const persistenceModel = UserMapper.toPersistence(user);
-  console.log('Данные для MongoDB:', persistenceModel); // <-- Проверьте это в консоли терминала
+  console.log('Данные для MongoDB:', persistenceModel); 
   
   const newUser = new this.userModel(persistenceModel);
   const savedUser = await newUser.save();
   
-  console.log('Сохранено в базу:', savedUser); // <-- Если здесь есть объект с _id, значит в базе он ТОЧНО есть
+  console.log('Сохранено в базу:', savedUser);
   return UserMapper.toDomain(savedUser);
 }
 
@@ -67,6 +66,67 @@ export class UserService implements IUserRepository {
       return users.map(user => UserMapper.toDomain(user));
     } catch (error) {
       throw new BadRequestException(`Ошибка при получении списка пользователей: ${error.message}`);
+    }
+  }
+
+  async setResetCode(userId: string, code: string): Promise<void> {
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15); // Код живет 15 минут
+
+    const result = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          resetCode: code,
+          resetCodeExpires: expires,
+        },
+      },
+      { new: true },
+    ).exec();
+
+    if (!result) {
+      throw new NotFoundException('Пользователь не найден при установке кода');
+    }
+  }
+
+  /**
+   * Обновляет пароль пользователя
+   */
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    const result = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          password: hashedPassword,
+        },
+      },
+    ).exec();
+
+    if (!result) {
+      throw new NotFoundException('Пользователь не найден при обновлении пароля');
+    }
+  }
+
+  /**
+   * Очищает данные сброса пароля после успешного использования
+   */
+  async clearResetCode(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          resetCode: null,
+          resetCodeExpires: null,
+        },
+      },
+    ).exec();
+  }
+
+  // Опционально: Метод для удаления (если нужно в репозитории)
+  async delete(id: string): Promise<void> {
+    const result = await this.userModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new NotFoundException(`Пользователь с ID ${id} не найден`);
     }
   }
 }

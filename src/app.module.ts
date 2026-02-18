@@ -10,6 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { TeacherModule } from './teachers/teacher.module';
 import { CoursesModule } from './courses/courses.module';
 import { TelegrafModule } from 'nestjs-telegraf';
+import { TelegramModule } from './telegram/telegram.module';
 
 
 const modules = [
@@ -29,19 +30,9 @@ const modules = [
   AuthModule,
   CoursesModule,
   PaymentsModule,
-  TeacherModule
+  TeacherModule,
+  TelegramModule.register(),
 ];
-
-if (process.env.ENABLE_TELEGRAM === 'true') {
-  modules.push(
-    TelegrafModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        token: configService.get<string>('TELEGRAM_BOT_TOKEN') || '',
-      }),
-      inject: [ConfigService],
-    })
-  );
-}
 
 @Module({
   imports: modules,

@@ -1,7 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -11,18 +14,21 @@ import { UserService } from 'src/user/service/user.service';
 import { User } from 'src/user/domain/entities/user.entity';
 import { TelegramAuthDto } from 'src/user/dto/telegram-auth.dto';
 import { CreateUserDto } from 'src/user/dto/new-user.dto';
+import { TelegramService } from 'src/telegram/telegram.service';
+import { ChangePasswordDto } from 'src/user/dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    @Optional() private telegramService: TelegramService,
   ) {}
 
   // --- ОБЫЧНЫЙ ЛОГИН ---
   async login(loginDto: any) {
     //console.log(loginDto);
-    
+
     const user = await this.validateUser(loginDto);
     return this.generateTokenResponse(user);
   }
@@ -80,16 +86,16 @@ export class AuthService {
 
   // Вспомогательный метод для генерации ответа с токеном
   private generateTokenResponse(user: User) {
-  const payload = { sub: user.id, email: user.email };
-  
-  // Извлекаем все поля, кроме пароля, чтобы не отправить его на фронтенд
-  const { password, ...userWithoutPassword } = user;
+    const payload = { sub: user.id, email: user.email };
 
-  return {
-    access_token: this.jwtService.sign(payload),
-    user: userWithoutPassword, // Теперь здесь полноценный объект User
-  };
-}
+    // Извлекаем все поля, кроме пароля, чтобы не отправить его на фронтенд
+    const { password, ...userWithoutPassword } = user;
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: userWithoutPassword, // Теперь здесь полноценный объект User
+    };
+  }
 
   private async validateUser(dto: any): Promise<User> {
     const user = await this.userService.findByEmail(dto.email);
@@ -141,4 +147,97 @@ export class AuthService {
       );
     }
   }
+
+  // --- 1. ЗАПРОС КОДА СБРОСА ---
+  async forgotPassword(email: string) {
+    const user = await this.userService.findByEmail(email);
+
+    if (!user) {
+      throw new NotFoundException('Пользователь с таким Email не найден');
+    }
+
+    if (!user.telegramId) {
+      throw new BadRequestException(
+        'Ваш аккаунт не привязан к Telegram. Пожалуйста, обратитесь в поддержку.',
+      );
+    }
+
+    // Генерируем 6-значный код
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Сохраняем код в базу пользователю (нужно добавить поля в схему User: resetCode и resetCodeExpires)
+    await this.userService.setResetCode(user.id, resetCode);
+
+    // Отправляем код в Телеграм
+    try {
+      await this.telegramService.sendResetCode(
+        String(user.telegramId),
+        resetCode,
+      );
+      return { message: 'Код подтверждения отправлен в ваш Telegram' };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Не удалось отправить сообщение в Telegram',
+      );
+    }
+  }
+
+  // --- 2. СБРОС ПАРОЛЯ ПО КОДУ ---
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const user = await this.userService.findByEmail(email);
+
+    if (!user || user.resetCode !== code) {
+      throw new BadRequestException('Неверный код или Email');
+    }
+
+    if (!user.resetCodeExpires) {
+      throw new BadRequestException(
+        'Запрос на восстановление пароля не найден или недействителен',
+      );
+    }
+
+    // Проверка срока жизни кода (например, 15 минут)
+    const isExpired = new Date() > user.resetCodeExpires;
+    if (isExpired) {
+      throw new BadRequestException('Срок действия кода истек');
+    }
+
+    // Хешируем новый пароль и сохраняем
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.userService.updatePassword(user.id, hashedPassword);
+
+    // Очищаем код сброса
+    await this.userService.clearResetCode(user.id);
+
+    return { message: 'Пароль успешно изменен' };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+  // 1. Получаем пользователя (включая пароль)
+  // ВАЖНО: убедитесь, что ваш репозиторий возвращает пароль
+  const user = await this.userService.findById(userId);
+  
+  if (!user || !user.password) {
+    throw new NotFoundException('Пользователь не найден');
+  }
+
+  // 2. Проверяем, совпадает ли "старый" пароль с тем, что в базе
+  const isPasswordMatching = await bcrypt.compare(
+    dto.oldPassword,
+    user.password,
+  );
+
+  if (!isPasswordMatching) {
+    throw new BadRequestException('Старый пароль введен неверно');
+  }
+
+  // 3. Хешируем новый пароль
+  const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
+
+  // 4. Сохраняем через UserService
+  await this.userService.updatePassword(userId, hashedNewPassword);
+
+  return { message: 'Пароль успешно обновлен' };
+}
+
 }

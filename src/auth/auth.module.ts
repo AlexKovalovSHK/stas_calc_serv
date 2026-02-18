@@ -6,12 +6,15 @@ import { UserModule } from "src/user/user.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./jwt-strategy";
+import { TelegramService } from "src/telegram/telegram.service";
+import { TelegramModule } from "src/telegram/telegram.module";
 
 dotenv.config();
 
 @Module({
     imports: [
       UserModule,
+      TelegramModule,
       // Регистрируем PassportModule и указываем стратегию по умолчанию
       PassportModule.register({ defaultStrategy: 'jwt' }), 
       JwtModule.register({
