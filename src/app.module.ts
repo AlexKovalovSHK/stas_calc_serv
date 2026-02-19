@@ -9,7 +9,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { TeacherModule } from './teachers/teacher.module';
 import { CoursesModule } from './courses/courses.module';
-import { TelegrafModule } from 'nestjs-telegraf';
+import { HttpModule } from '@nestjs/axios';
 import { TelegramModule } from './telegram/telegram.module';
 
 
@@ -32,6 +32,7 @@ const modules = [
   PaymentsModule,
   TeacherModule,
   TelegramModule.register(),
+  HttpModule
 ];
 
 @Module({
