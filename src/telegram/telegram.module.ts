@@ -9,22 +9,40 @@ import { ConfigService } from '@nestjs/config';
 @Module({})
 export class TelegramModule {
   static register(): DynamicModule {
+    // Проверяем флаг включения ИЛИ окружение (например, отключаем на локалке если нет токена)
     const isEnabled = process.env.ENABLE_TELEGRAM === 'true';
     
-    // Если Telegram отключен, мы просто не регистрируем провайдеров, 
-    // которые требуют @InjectBot, или регистрируем их иначе.
-    // Но проще всего загружать модуль целиком только при наличии флага.
-    
+    // Базовая конфигурация для динамического модуля
+    const dynamicModule: DynamicModule = {
+      module: TelegramModule,
+      global: true, // Это сделает провайдеры доступными везде без импорта
+    };
+
     if (!isEnabled) {
+      // ИСКЛЮЧЕНИЕ ДЛЯ ЛОКАЛЬНОЙ РАЗРАБОТКИ / ТЕСТОВ
       return {
-        module: TelegramModule,
-        providers: [],
-        exports: [],
+        ...dynamicModule,
+        providers: [
+          {
+            // Вместо реального сервиса даем заглушку с теми же именами методов
+            provide: TelegramService,
+            useValue: {
+              sendMessage: async (id: string, text: string) => {
+                console.log(`[LOCAL DEV] TG Message to ${id} blocked: ${text}`);
+              },
+              sendResetCode: async (id: string, code: string) => {
+                console.log(`[LOCAL DEV] TG Code to ${id} blocked: ${code}`);
+              },
+            },
+          },
+        ],
+        exports: [TelegramService],
       };
     }
 
+    // РАБОЧИЙ РЕЖИМ (ПРОДАКШЕН)
     return {
-      module: TelegramModule,
+      ...dynamicModule,
       imports: [
         TelegrafModule.forRootAsync({
           useFactory: (config: ConfigService) => ({

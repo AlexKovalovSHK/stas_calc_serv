@@ -1,11 +1,11 @@
 // src/telegram/telegram.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 
 @Injectable()
 export class TelegramService {
-  constructor(@InjectBot() private bot: Telegraf<any>) {}
+  constructor(@Optional() @InjectBot() private bot: Telegraf<any> ) {}
 
   async sendResetCode(tgId: string, code: string) {
     await this.bot.telegram.sendMessage(
@@ -23,5 +23,5 @@ export class TelegramService {
       throw e;
     }
   }
-  
+
 }

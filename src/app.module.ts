@@ -12,6 +12,7 @@ import { CoursesModule } from './courses/courses.module';
 import { HttpModule } from '@nestjs/axios';
 import { TelegramModule } from './telegram/telegram.module';
 import { AdminController } from './admin/admin.controller';
+import { AdminModule } from './admin/admin.module';
 
 
 const modules = [
@@ -33,12 +34,13 @@ const modules = [
   PaymentsModule,
   TeacherModule,
   TelegramModule.register(),
-  HttpModule
+  HttpModule,
+  AdminModule
 ];
 
 @Module({
   imports: modules,
-  controllers: [AppController, AdminController],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule { }
