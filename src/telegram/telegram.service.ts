@@ -14,4 +14,14 @@ export class TelegramService {
       { parse_mode: 'HTML' }
     );
   }
+
+  async sendMessage(chatId: string, text: string) {
+    try {
+      await this.bot.telegram.sendMessage(chatId, text, { parse_mode: 'HTML' });
+    } catch (e) {
+      console.error('Ошибка отправки в TG:', e);
+      throw e;
+    }
+  }
+  
 }

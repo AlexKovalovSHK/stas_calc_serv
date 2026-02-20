@@ -11,6 +11,7 @@ import { TeacherModule } from './teachers/teacher.module';
 import { CoursesModule } from './courses/courses.module';
 import { HttpModule } from '@nestjs/axios';
 import { TelegramModule } from './telegram/telegram.module';
+import { AdminController } from './admin/admin.controller';
 
 
 const modules = [
@@ -37,7 +38,7 @@ const modules = [
 
 @Module({
   imports: modules,
-  controllers: [AppController],
+  controllers: [AppController, AdminController],
   providers: [],
 })
 export class AppModule { }
