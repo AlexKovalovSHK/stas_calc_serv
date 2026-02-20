@@ -22,6 +22,13 @@ export class AuthController {
     return this.authService.loginWithTelegram(tgData);
   }
 
+  @UseGuards(JwtAuthGuard)
+@Post('link-telegram')
+async linkTelegram(@Req() req: any, @Body() tgData: TelegramAuthDto) {
+  const userId = req.user.id; // Берем из JWT токена
+  return this.authService.linkTelegram(userId, tgData);
+}
+
   @Post('registration')
   async register(@Body() dto: CreateUserDto) {
     return this.authService.registration(dto);

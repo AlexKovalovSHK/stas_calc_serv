@@ -88,17 +88,21 @@ export class AuthService {
 
   // Вспомогательный метод для генерации ответа с токеном
   private generateTokenResponse(user: User) {
-    const payload = { sub: user.id, email: user.email };
-
-    // Извлекаем все поля, кроме пароля, чтобы не отправить его на фронтенд
+    // Убеждаемся, что payload содержит строку ID
+    const payload = { sub: String(user.id), email: user.email };
+  
+    // Если user - это Domain Entity, у него уже должен быть .id
+    // Но для надежности при деструктуризации:
     const { password, ...userWithoutPassword } = user;
-
+  
     return {
       access_token: this.jwtService.sign(payload),
-      user: userWithoutPassword, // Теперь здесь полноценный объект User
+      user: {
+        ...userWithoutPassword,
+        id: String(user.id), // Явно гарантируем наличие строкового ID
+      },
     };
   }
-
   private async validateUser(dto: any): Promise<User> {
     const user = await this.userService.findByEmail(dto.email);
 

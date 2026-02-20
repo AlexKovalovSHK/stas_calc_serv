@@ -5,7 +5,7 @@ import { User as UserEntity } from '../../domain/entities/user.entity';
 export class UserMapper {
   static toDomain(raw: any): UserEntity {
     return new UserEntity({
-      id: raw._id.toString(),
+      id: raw._id ? raw._id.toString() : raw.id,
       name: raw.name,
       surname: raw.surname,
       email: raw.email,
