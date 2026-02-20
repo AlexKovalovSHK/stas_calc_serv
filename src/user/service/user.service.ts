@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, User as UserEntity } from '../domain/entities/user.entity'; // Ваша чистая сущность
-import { UserMapper } from '../infrastructure/mappers/user.mapper'; // Преобразователь
+import { User, User as UserEntity } from '../domain/entities/user.entity';
+import { UserMapper } from '../infrastructure/mappers/user.mapper';
 import { IUserRepository } from '../domain/repositories/user.repository.interface';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserMongoModel } from '../infrastructure/schemas/user.shema';
@@ -129,4 +129,32 @@ export class UserService implements IUserRepository {
       throw new NotFoundException(`Пользователь с ID ${id} не найден`);
     }
   }
+
+  // В UserService.ts
+
+async updateTelegramInfo(
+  userId: string, 
+  data: { telegram_id: string; telegramUsername?: string; avatar?: string }
+): Promise<UserEntity> {
+  const updatedUser = await this.userModel
+    .findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          telegram_id: Number(data.telegram_id), // Преобразуем в число, как в вашем findByTgId
+          telegramUsername: data.telegramUsername,
+          avatar: data.avatar,
+        },
+      },
+      { new: true },
+    )
+    .exec();
+
+  if (!updatedUser) {
+    throw new NotFoundException(`Пользователь с ID ${userId} не найден`);
+  }
+
+  return UserMapper.toDomain(updatedUser);
+}
+
 }

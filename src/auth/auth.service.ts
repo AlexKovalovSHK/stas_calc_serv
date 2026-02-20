@@ -17,6 +17,8 @@ import { CreateUserDto } from 'src/user/dto/new-user.dto';
 import { TelegramService } from 'src/telegram/telegram.service';
 import { ChangePasswordDto } from 'src/user/dto/change-password.dto';
 
+export interface TelegramCheckDto extends TelegramAuthDto {}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -58,7 +60,7 @@ export class AuthService {
   // --- ВАЛИДАЦИЯ ХЭША TELEGRAM ---
   private verifyTelegramHash(data: TelegramAuthDto): boolean {
     const { hash, ...userData } = data;
-    const botToken = process.env.TELEGRAM_BOT_TOKEN_LOGIN; // Токен вашего бота
+    const botToken = process.env.TELEGRAM_BOT_TOKEN; // Токен вашего бота
 
     // Сортируем ключи и собираем строку проверки
     const dataCheckString = Object.keys(userData)
@@ -238,6 +240,27 @@ export class AuthService {
   await this.userService.updatePassword(userId, hashedNewPassword);
 
   return { message: 'Пароль успешно обновлен' };
+}
+
+async linkTelegram(userId: string, tgData: TelegramAuthDto) {
+  // 1. Обязательная проверка хэша
+  const isValid = this.verifyTelegramHash(tgData);
+  if (!isValid) {
+    throw new UnauthorizedException('Данные Telegram не прошли проверку (invalid hash)');
+  }
+
+  // 2. Проверка: не привязан ли этот Telegram уже к другому аккаунту?
+  const existingUser = await this.userService.findByTgId(String(tgData.id));
+  if (existingUser && existingUser.id !== userId) {
+    throw new ConflictException('Этот Telegram аккаунт уже привязан к другому пользователю');
+  }
+
+  // 3. Только после проверок сохраняем ID
+  return this.userService.updateTelegramInfo(userId, {
+    telegram_id: String(tgData.id),
+    telegramUsername: tgData.username,
+    avatar: tgData.photo_url
+  });
 }
 
 }

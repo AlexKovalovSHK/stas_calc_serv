@@ -9,4 +9,10 @@ export interface IUserRepository {
   update(id: string, user: UpdateUserDto): Promise<User>;
 
   getUserList(): Promise<User[]>
+
+  updateTelegramInfo(userId: string, data: { 
+    telegram_id: string; 
+    telegramUsername?: string; 
+    avatar?: string 
+  }): Promise<User>;
 }
