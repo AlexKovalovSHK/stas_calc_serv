@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, Between } from 'typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm';
 import { MetricEntity } from './entities/metric.entity';
 
 @Injectable()
@@ -22,6 +22,10 @@ export class MetricsService {
         browser: string;
         os: string;
         device: string;
+        referrer?: string;
+        utmSource?: string;
+        utmMedium?: string;
+        utmCampaign?: string;
     }) {
         const duplicateWindow = new Date(Date.now() - 5000);
 
@@ -102,5 +106,97 @@ export class MetricsService {
             count: parseInt(p.count),
             avgTime: parseFloat(p.avgTime || '0')
         }));
+    }
+
+    async getDetailedStats() {
+        const countries = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('country', 'name')
+            .addSelect('COUNT(DISTINCT(sessionId))', 'value')
+            .groupBy('country')
+            .orderBy('value', 'DESC')
+            .limit(10)
+            .getRawMany();
+
+        const devices = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('device', 'name')
+            .addSelect('COUNT(*)', 'value')
+            .groupBy('device')
+            .getRawMany();
+
+        const browsers = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('browser', 'name')
+            .addSelect('COUNT(*)', 'value')
+            .groupBy('browser')
+            .orderBy('value', 'DESC')
+            .limit(5)
+            .getRawMany();
+
+        const referrers = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('referrer', 'name')
+            .addSelect('COUNT(*)', 'value')
+            .where('referrer IS NOT NULL AND referrer != ""')
+            .groupBy('referrer')
+            .orderBy('value', 'DESC')
+            .limit(10)
+            .getRawMany();
+
+        const utmSources = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('utmSource', 'name')
+            .addSelect('COUNT(*)', 'value')
+            .where('utmSource IS NOT NULL AND utmSource != ""')
+            .groupBy('utmSource')
+            .orderBy('value', 'DESC')
+            .getRawMany();
+
+        // Engagement metrics: Depth & Bounce Rate
+        const depthResult = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('AVG(pageCount)', 'avgDepth')
+            .from(subQuery => {
+                return subQuery
+                    .select('sessionId')
+                    .addSelect('COUNT(url)', 'pageCount')
+                    .from(MetricEntity, 'm')
+                    .groupBy('sessionId');
+            }, 'sessionStats')
+            .getRawOne();
+
+        const totalSessionsResult = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('COUNT(DISTINCT(sessionId))', 'count')
+            .getRawOne();
+
+        const bounceSessionsResult = await this.metricRepository
+            .createQueryBuilder('metric')
+            .select('COUNT(*)', 'count')
+            .from(subQuery => {
+                return subQuery
+                    .select('sessionId')
+                    .addSelect('COUNT(url)', 'pageCount')
+                    .addSelect('SUM(durationSeconds)', 'totalDuration')
+                    .from(MetricEntity, 'm')
+                    .groupBy('sessionId')
+                    .having('pageCount = 1 OR totalDuration < 10');
+            }, 'bounces')
+            .getRawOne();
+
+        const totalCount = parseInt(totalSessionsResult.count || '0');
+        const bounceCount = parseInt(bounceSessionsResult.count || '0');
+        const bounceRate = totalCount > 0 ? Math.round((bounceCount / totalCount) * 100) : 0;
+
+        return {
+            countries,
+            devices,
+            browsers,
+            referrers,
+            utmSources,
+            depth: parseFloat(depthResult?.avgDepth || '0').toFixed(2),
+            bounceRate: `${bounceRate}%`
+        };
     }
 }

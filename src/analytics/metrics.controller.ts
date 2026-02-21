@@ -35,6 +35,10 @@ export class MetricsController {
       browser: uaResult.browser.name || 'unknown',
       os: uaResult.os.name || 'unknown',
       device: uaResult.device.type || 'desktop',
+      referrer: data.referrer || null,
+      utmSource: data.utmSource || null,
+      utmMedium: data.utmMedium || null,
+      utmCampaign: data.utmCampaign || null,
     };
 
     await this.metricsService.logPageView(metricsRecord);
@@ -77,6 +81,11 @@ export class MetricsController {
   @Get('stats/pages')
   async getTopPages() {
     return this.metricsService.getPopularPages();
+  }
+
+  @Get('stats/detailed')
+  async getDetailedStats() {
+    return this.metricsService.getDetailedStats();
   }
 
 }

@@ -29,6 +29,18 @@ export class MetricEntity {
     @Column({ default: 'desktop' })
     device: string;
 
+    @Column({ nullable: true })
+    referrer: string;
+
+    @Column({ nullable: true })
+    utmSource: string;
+
+    @Column({ nullable: true })
+    utmMedium: string;
+
+    @Column({ nullable: true })
+    utmCampaign: string;
+
     @Column({ type: 'integer', default: 0 })
     durationSeconds: number;
 
