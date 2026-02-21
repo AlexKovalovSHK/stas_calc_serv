@@ -1,18 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './AppController';
 import { PaymentsModule } from './paypal/payments.module';
-import { JwtAuthGuard } from './auth/jwt-auth.guard';
-import { APP_GUARD } from '@nestjs/core';
 import { TeacherModule } from './teachers/teacher.module';
 import { CoursesModule } from './courses/courses.module';
 import { HttpModule } from '@nestjs/axios';
 import { TelegramModule } from './telegram/telegram.module';
-import { AdminController } from './admin/admin.controller';
 import { AdminModule } from './admin/admin.module';
+import { MetricsModule } from './analytics/metrics.module';
 
 
 const modules = [
@@ -28,6 +27,16 @@ const modules = [
     }),
     inject: [ConfigService],
   }),
+  TypeOrmModule.forRootAsync({
+    imports: [ConfigModule],
+    useFactory: (configService: ConfigService) => ({
+      type: 'sqlite',
+      database: configService.get<string>('SQLITE_DB_PATH') || 'analytics.sqlite',
+      autoLoadEntities: true,
+      synchronize: true,
+    }),
+    inject: [ConfigService],
+  }),
   UserModule,
   AuthModule,
   CoursesModule,
@@ -35,7 +44,8 @@ const modules = [
   TeacherModule,
   TelegramModule.register(),
   HttpModule,
-  AdminModule
+  AdminModule,
+  MetricsModule
 ];
 
 @Module({

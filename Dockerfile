@@ -34,11 +34,12 @@ COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 
-# Устанавливаем корректные права
-RUN chown -R nodejs:nodejs /app
+# Создаем директорию для данных (SQLite) и устанавливаем корректные права
+RUN mkdir -p /app/data && chown -R nodejs:nodejs /app
 
 # Переключаемся на непривилегированного пользователя
 USER nodejs
+
 
 EXPOSE 5002
 
