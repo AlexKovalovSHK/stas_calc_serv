@@ -108,6 +108,8 @@ jobs:
         run: |
           sshpass -p "${{ secrets.SUDO_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "
             cd $DEPLOY_DIR &&
+            mkdir -p data && 
+            chmod 777 data && 
             docker load -i $DOCKER_IMAGE.tar &&
             docker-compose down && docker-compose up -d
           "
