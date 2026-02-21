@@ -157,4 +157,30 @@ async updateTelegramInfo(
   return UserMapper.toDomain(updatedUser);
 }
 
+async addRole(userId: string, role: string): Promise<UserEntity> {
+  const updatedUser = await this.userModel
+    .findByIdAndUpdate(
+      userId,
+      { $addToSet: { role: role } }, // Добавляет в массив, если нет
+      { new: true }
+    )
+    .exec();
+
+  if (!updatedUser) throw new NotFoundException('Пользователь не найден');
+  return UserMapper.toDomain(updatedUser);
+}
+
+async removeRole(userId: string, role: string): Promise<UserEntity> {
+  const updatedUser = await this.userModel
+    .findByIdAndUpdate(
+      userId,
+      { $pull: { role: role } }, // Удаляет из массива
+      { new: true }
+    )
+    .exec();
+
+  if (!updatedUser) throw new NotFoundException('Пользователь не найден');
+  return UserMapper.toDomain(updatedUser);
+}
+
 }

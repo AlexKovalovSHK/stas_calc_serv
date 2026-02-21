@@ -18,10 +18,11 @@ import { CreateUserDto } from '../dto/new-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { User } from '../domain/entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { Roles } from 'src/auth/roles.decorator';
 
 @Controller('users') // Базовый путь: /users (множественное число)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   // POST /users - Создание пользователя (Регистрация)
   @Post()
@@ -37,10 +38,10 @@ export class UserController {
 
   // GET /users/:id - Получение конкретного пользователя (Профиль)
   @UseGuards(JwtAuthGuard)
-@Get(':id')
-async findOne(@Param('id') id: string) {
-  return this.userService.findById(id);
-}
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.userService.findById(id);
+  }
 
   // GET /users/telegram/:tgId - Поиск по Telegram (специфичный ресурс)
   @Get('telegram/:tgId')
@@ -73,4 +74,11 @@ async findOne(@Param('id') id: string) {
     // return this.userService.remove(id);
     return { message: 'User deleted successfully' };
   }
+
+  @Post(':id/make-admin')
+  @Roles('Owner') // Только владелец может назначать админов
+  async makeAdmin(@Param('id') id: string) {
+    return this.userService.addRole(id, 'Admin');
+  }
+
 }

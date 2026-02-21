@@ -15,4 +15,7 @@ export interface IUserRepository {
     telegramUsername?: string; 
     avatar?: string 
   }): Promise<User>;
+
+  addRole(userId: string, role: string): Promise<User>;
+removeRole(userId: string, role: string): Promise<User>;
 }

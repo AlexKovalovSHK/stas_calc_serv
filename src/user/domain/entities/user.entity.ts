@@ -4,7 +4,7 @@ export class User {
   surname: string;
   email: string;
   password?: string;
-  role: string;
+  role: string[];
   phone?: string;
   avatar?: string;
   telegramId?: number;

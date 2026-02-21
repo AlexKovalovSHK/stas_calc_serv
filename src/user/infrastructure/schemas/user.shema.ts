@@ -20,8 +20,8 @@ export class UserMongoModel {
     @Prop({ required: true })
     password: string;
 
-    @Prop({ default: 'Student' })
-    role: string;
+    @Prop({ type: [String], default: ['Student'] }) 
+    role: string[];
 
     @Prop()
     phone: string;

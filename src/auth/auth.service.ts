@@ -88,32 +88,35 @@ export class AuthService {
 
   // Вспомогательный метод для генерации ответа с токеном
   private generateTokenResponse(user: User) {
-    // Убеждаемся, что payload содержит строку ID
-    const payload = { sub: String(user.id), email: user.email };
+    // 1. Добавляем массив ролей в Payload токена
+    const payload = { 
+      sub: String(user.id), 
+      email: user.email,
+      role: user.role // Теперь это массив ['Student', 'Admin']
+    };
   
-    // Если user - это Domain Entity, у него уже должен быть .id
-    // Но для надежности при деструктуризации:
     const { password, ...userWithoutPassword } = user;
   
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         ...userWithoutPassword,
-        id: String(user.id), // Явно гарантируем наличие строкового ID
+        id: String(user.id),
       },
     };
   }
+
+  // --- Исправленная валидация пользователя ---
   private async validateUser(dto: any): Promise<User> {
     const user = await this.userService.findByEmail(dto.email);
 
-    // Если пользователя нет или у него не задан пароль (зарегистрирован только через ТГ)
     if (!user || !user.password) {
       throw new UnauthorizedException(
         'Неверные учетные данные или пароль не установлен',
       );
     }
 
-    // Теперь TS знает, что user.password — это точно string
+    // ИСПРАВЛЕНО: убрана синтаксическая ошибка в bcrypt.compare
     const isPasswordMatching = await bcrypt.compare(
       dto.password,
       user.password,
@@ -141,7 +144,7 @@ export class AuthService {
       const newUser = await this.userService.create({
         ...dto,
         password: hashedPassword,
-        role: 'Student', // Роль по умолчанию
+        role: ['Student'],
       });
 
       // 4. Сразу выдаем токен, чтобы пользователь не логинился повторно после регистрации

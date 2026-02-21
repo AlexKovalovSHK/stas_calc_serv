@@ -31,7 +31,7 @@ const modules = [
     imports: [ConfigModule],
     useFactory: (configService: ConfigService) => ({
       type: 'sqlite',
-      database: configService.get<string>('SQLITE_DB_PATH') || 'data/analytics.sqlite',
+      database: configService.get<string>('SQLITE_DB_PATH') || 'analytics.sqlite',
       autoLoadEntities: true,
       synchronize: true,
     }),
