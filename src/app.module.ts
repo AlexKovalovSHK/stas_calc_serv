@@ -12,6 +12,7 @@ import { HttpModule } from '@nestjs/axios';
 import { TelegramModule } from './telegram/telegram.module';
 import { AdminModule } from './admin/admin.module';
 import { MetricsModule } from './analytics/metrics.module';
+import { VideoModule } from './video/video.module';
 
 
 const modules = [
@@ -45,7 +46,8 @@ const modules = [
   TelegramModule.register(),
   HttpModule,
   AdminModule,
-  MetricsModule
+  MetricsModule,
+  VideoModule,
 ];
 
 @Module({
