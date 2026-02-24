@@ -9,22 +9,20 @@ import { ConfigService } from '@nestjs/config';
 @Module({})
 export class TelegramModule {
   static register(): DynamicModule {
-    // Проверяем флаг включения ИЛИ окружение (например, отключаем на локалке если нет токена)
+    const rawValue = process.env.ENABLE_TELEGRAM;
+    console.log(`[DEBUG] ENABLE_TELEGRAM value: "${rawValue}"`, typeof rawValue);
     const isEnabled = process.env.ENABLE_TELEGRAM === 'true';
     
-    // Базовая конфигурация для динамического модуля
     const dynamicModule: DynamicModule = {
       module: TelegramModule,
-      global: true, // Это сделает провайдеры доступными везде без импорта
+      global: true,
     };
 
     if (!isEnabled) {
-      // ИСКЛЮЧЕНИЕ ДЛЯ ЛОКАЛЬНОЙ РАЗРАБОТКИ / ТЕСТОВ
       return {
         ...dynamicModule,
         providers: [
           {
-            // Вместо реального сервиса даем заглушку с теми же именами методов
             provide: TelegramService,
             useValue: {
               sendMessage: async (id: string, text: string) => {
