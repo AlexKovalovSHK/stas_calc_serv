@@ -1,6 +1,6 @@
 // infrastructure/mappers/user.mapper.ts
 
-import { User as UserEntity } from '../../domain/entities/user.entity';
+import { User, User as UserEntity } from '../../domain/entities/user.entity';
 
 export class UserMapper {
   static toDomain(raw: any): UserEntity {
@@ -19,19 +19,24 @@ export class UserMapper {
     });
   }
 
-  static toPersistence(ata: any) {
-    return {
-      // Убедитесь, что имена полей СЛЕВА совпадают с именами в @Prop вашей схемы!
-      name: ata.name,
-      surname: ata.surname,
-      email: ata.email,
-      password: ata.password,
-      role: ata.role,
-      phone: ata.phone,
-      telegram_id: ata.telegramId ?? ata.telegram_id,
-      telegram_username: ata.telegramUsername ?? ata.telegram_username,
-      avatar: ata.avatar,
-      academicInfo: ata.academicInfo,
+  static toPersistence(domain: Partial<User>): any {
+    const persistence: any = {
+      name: domain.name,
+      surname: domain.surname,
+      email: domain.email,
+      password: domain.password,
+      role: domain.role,
+      phone: domain.phone,
+      avatar: domain.avatar,
+      // ВАЖНО: Маппим camelCase в snake_case, как в схеме
+      telegram_id: domain.telegramId || domain['telegram_id'],
+      telegram_username: domain.telegramUsername || domain['telegram_username'],
     };
+
+    if (domain.academicInfo) {
+      persistence.academicInfo = domain.academicInfo;
+    }
+
+    return persistence;
   }
 }

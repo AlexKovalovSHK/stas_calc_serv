@@ -11,7 +11,7 @@ import { UserMongoModel } from '../infrastructure/schemas/user.schema';
 export class UserService implements IUserRepository {
   constructor(
     @InjectModel(UserMongoModel.name) private readonly userModel: Model<UserMongoModel>,
-  ) {}
+  ) { }
 
   // Названия методов должны СТРОГО совпадать с интерфейсом IUserRepository
   async findById(id: string): Promise<UserEntity | null> {
@@ -29,37 +29,37 @@ export class UserService implements IUserRepository {
     return user ? UserMapper.toDomain(user) : null;
   }
 
- /*async create(user: Partial<UserEntity>): Promise<UserEntity> {
-  const persistenceModel = UserMapper.toPersistence(user);
-  console.log('Данные для MongoDB:', persistenceModel); 
-  
-  const newUser = new this.userModel(persistenceModel);
-  const savedUser = await newUser.save();
-  
-  console.log('Сохранено в базу:', savedUser);
-  return UserMapper.toDomain(savedUser);
-}*/
+  /*async create(user: Partial<UserEntity>): Promise<UserEntity> {
+   const persistenceModel = UserMapper.toPersistence(user);
+   console.log('Данные для MongoDB:', persistenceModel); 
+   
+   const newUser = new this.userModel(persistenceModel);
+   const savedUser = await newUser.save();
+   
+   console.log('Сохранено в базу:', savedUser);
+   return UserMapper.toDomain(savedUser);
+ }*/
 
-async create(userData: Partial<UserEntity>): Promise<UserEntity> {
-  // 1. Безопасно достаем email
-  const email = userData.email?.toLowerCase();
-  if (!email) {
-    throw new BadRequestException('Email обязателен');
+  async create(userData: Partial<UserEntity>): Promise<UserEntity> {
+    // 1. Безопасно достаем email
+    const email = userData.email?.toLowerCase();
+    if (!email) {
+      throw new BadRequestException('Email обязателен');
+    }
+
+    // 2. Проверяем дубликат
+    const existingUser = await this.userModel.findOne({ email });
+    if (existingUser) {
+      throw new BadRequestException('Пользователь с таким email уже существует');
+    }
+
+    // 3. Мапим в БД
+    const persistenceModel = UserMapper.toPersistence(userData);
+    const newUser = new this.userModel(persistenceModel);
+    const savedUser = await newUser.save();
+
+    return UserMapper.toDomain(savedUser);
   }
-
-  // 2. Проверяем дубликат
-  const existingUser = await this.userModel.findOne({ email });
-  if (existingUser) {
-    throw new BadRequestException('Пользователь с таким email уже существует');
-  }
-
-  // 3. Мапим в БД
-  const persistenceModel = UserMapper.toPersistence(userData);
-  const newUser = new this.userModel(persistenceModel);
-  const savedUser = await newUser.save();
-  
-  return UserMapper.toDomain(savedUser);
-}
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserEntity> {
     // Преобразуем DTO в формат полей БД
@@ -124,11 +124,11 @@ async create(userData: Partial<UserEntity>): Promise<UserEntity> {
   async getUserList(): Promise<User[]> {
     try {
       const users = await this.userModel.find().exec();
-      
+
       if (!users || users.length === 0) {
         return [];
       }
-      
+
       return users.map(user => UserMapper.toDomain(user));
     } catch (error) {
       throw new BadRequestException(`Ошибка при получении списка пользователей: ${error.message}`);
@@ -198,55 +198,55 @@ async create(userData: Partial<UserEntity>): Promise<UserEntity> {
 
   // В UserService.ts
 
-async updateTelegramInfo(
-  userId: string, 
-  data: { telegram_id: string; telegramUsername?: string; avatar?: string }
-): Promise<UserEntity> {
-  const updatedUser = await this.userModel
-    .findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          telegram_id: Number(data.telegram_id), // Преобразуем в число, как в вашем findByTgId
-          telegram_username: data.telegramUsername,
-          avatar: data.avatar,
+  async updateTelegramInfo(
+    userId: string,
+    data: { telegram_id: string; telegramUsername?: string; avatar?: string }
+  ): Promise<UserEntity> {
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            telegram_id: Number(data.telegram_id),
+            telegram_username: data.telegramUsername,
+            avatar: data.avatar,
+          },
         },
-      },
-      { new: true },
-    )
-    .exec();
+        { new: true },
+      )
+      .exec();
 
-  if (!updatedUser) {
-    throw new NotFoundException(`Пользователь с ID ${userId} не найден`);
+    if (!updatedUser) {
+      throw new NotFoundException(`Пользователь с ID ${userId} не найден`);
+    }
+
+    return UserMapper.toDomain(updatedUser);
   }
 
-  return UserMapper.toDomain(updatedUser);
-}
+  async addRole(userId: string, role: string): Promise<UserEntity> {
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        { $addToSet: { role: role } }, // Добавляет в массив, если нет
+        { new: true }
+      )
+      .exec();
 
-async addRole(userId: string, role: string): Promise<UserEntity> {
-  const updatedUser = await this.userModel
-    .findByIdAndUpdate(
-      userId,
-      { $addToSet: { role: role } }, // Добавляет в массив, если нет
-      { new: true }
-    )
-    .exec();
+    if (!updatedUser) throw new NotFoundException('Пользователь не найден');
+    return UserMapper.toDomain(updatedUser);
+  }
 
-  if (!updatedUser) throw new NotFoundException('Пользователь не найден');
-  return UserMapper.toDomain(updatedUser);
-}
+  async removeRole(userId: string, role: string): Promise<UserEntity> {
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        { $pull: { role: role } }, // Удаляет из массива
+        { new: true }
+      )
+      .exec();
 
-async removeRole(userId: string, role: string): Promise<UserEntity> {
-  const updatedUser = await this.userModel
-    .findByIdAndUpdate(
-      userId,
-      { $pull: { role: role } }, // Удаляет из массива
-      { new: true }
-    )
-    .exec();
-
-  if (!updatedUser) throw new NotFoundException('Пользователь не найден');
-  return UserMapper.toDomain(updatedUser);
-}
+    if (!updatedUser) throw new NotFoundException('Пользователь не найден');
+    return UserMapper.toDomain(updatedUser);
+  }
 
 }
