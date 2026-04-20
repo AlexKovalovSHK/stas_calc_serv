@@ -31,8 +31,13 @@ export class UpdateUserDto {
     @IsOptional() @IsString()
     avatar?: string;
 
-    @IsOptional() @IsNumber()
+    @IsOptional()
+    @IsNumber()
     telegram_id?: number;
+
+    @IsOptional()
+    @IsString()
+    telegramUsername?: string
 
     @IsOptional() @IsString()
     telegram_username?: string;
