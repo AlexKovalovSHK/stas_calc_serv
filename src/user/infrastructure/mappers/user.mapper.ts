@@ -26,7 +26,7 @@ export class UserMapper {
       surname: ata.surname,
       email: ata.email,
       password: ata.password,
-      role: ata.role && ata.role.length > 0 ? ata.role : ['Student'],
+      role: ata.role,
       phone: ata.phone,
       telegram_id: ata.telegramId ?? ata.telegram_id,
       telegram_username: ata.telegramUsername ?? ata.telegram_username,

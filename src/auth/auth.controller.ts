@@ -10,7 +10,7 @@ import { ChangePasswordDto } from 'src/user/dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('login')
   async login(@Body() loginDto: LoginUserDto) {
@@ -23,11 +23,11 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-@Post('link-telegram')
-async linkTelegram(@Req() req: any, @Body() tgData: TelegramAuthDto) {
-  const userId = req.user.id; // Берем из JWT токена
-  return this.authService.linkTelegram(userId, tgData);
-}
+  @Post('link-telegram')
+  async linkTelegram(@Req() req: any, @Body() tgData: TelegramAuthDto) {
+    const userId = req.user.id; // Берем из JWT токена
+    return this.authService.linkTelegram(userId, tgData);
+  }
 
   @Post('registration')
   async register(@Body() dto: CreateUserDto) {
@@ -52,18 +52,18 @@ async linkTelegram(@Req() req: any, @Body() tgData: TelegramAuthDto) {
   @UseGuards(JwtAuthGuard)
   @Patch('change-password')
   async changePassword(
-    @Req() req: any, 
+    @Req() req: any,
     @Body() dto: ChangePasswordDto
   ) {
     // ТАК КАК стратегия вернула объект из базы через findById:
-    const userId = req.user.id; 
-    
+    const userId = req.user.id;
+
     // Добавьте логи, чтобы убедиться:
     console.log('User from request:', req.user);
     console.log('Extracted ID:', userId);
 
     if (!userId) {
-       throw new UnauthorizedException('ID пользователя не найден в токене');
+      throw new UnauthorizedException('ID пользователя не найден в токене');
     }
 
     return this.authService.changePassword(userId, dto);

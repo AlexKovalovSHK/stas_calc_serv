@@ -5,7 +5,7 @@ import { User, User as UserEntity } from '../domain/entities/user.entity';
 import { UserMapper } from '../infrastructure/mappers/user.mapper';
 import { IUserRepository } from '../domain/repositories/user.repository.interface';
 import { UpdateUserDto } from '../dto/update-user.dto';
-import { UserMongoModel } from '../infrastructure/schemas/user.shema';
+import { UserMongoModel } from '../infrastructure/schemas/user.schema';
 
 @Injectable()
 export class UserService implements IUserRepository {
