@@ -29,7 +29,7 @@ export class UserService implements IUserRepository {
     return user ? UserMapper.toDomain(user) : null;
   }
 
- async create(user: Partial<UserEntity>): Promise<UserEntity> {
+ /*async create(user: Partial<UserEntity>): Promise<UserEntity> {
   const persistenceModel = UserMapper.toPersistence(user);
   console.log('Данные для MongoDB:', persistenceModel); 
   
@@ -38,14 +38,51 @@ export class UserService implements IUserRepository {
   
   console.log('Сохранено в базу:', savedUser);
   return UserMapper.toDomain(savedUser);
+}*/
+
+async create(userData: Partial<UserEntity>): Promise<UserEntity> {
+  // 1. Безопасно достаем email
+  const email = userData.email?.toLowerCase();
+  if (!email) {
+    throw new BadRequestException('Email обязателен');
+  }
+
+  // 2. Проверяем дубликат
+  const existingUser = await this.userModel.findOne({ email });
+  if (existingUser) {
+    throw new BadRequestException('Пользователь с таким email уже существует');
+  }
+
+  // 3. Мапим в БД
+  const persistenceModel = UserMapper.toPersistence(userData);
+  const newUser = new this.userModel(persistenceModel);
+  const savedUser = await newUser.save();
+  
+  return UserMapper.toDomain(savedUser);
 }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserEntity> {
     // Преобразуем DTO в формат полей БД
     const updateData = UserMapper.toPersistence(updateUserDto);
 
+    // Используем "dot notation" для вложенных полей, чтобы не перезатереть весь объект academicInfo
+    const finalUpdateData: any = {};
+    for (const key in updateData) {
+      if (updateData[key] !== undefined) {
+        if (key === 'academicInfo' && typeof updateData[key] === 'object' && updateData[key] !== null) {
+          for (const subKey in updateData[key]) {
+            if (updateData[key][subKey] !== undefined) {
+              finalUpdateData[`academicInfo.${subKey}`] = updateData[key][subKey];
+            }
+          }
+        } else {
+          finalUpdateData[key] = updateData[key];
+        }
+      }
+    }
+
     const updatedUser = await this.userModel
-      .findByIdAndUpdate(id, { $set: updateData }, { new: true })
+      .findByIdAndUpdate(id, { $set: finalUpdateData }, { new: true })
       .exec();
 
     if (!updatedUser) {
@@ -53,6 +90,35 @@ export class UserService implements IUserRepository {
     }
 
     return UserMapper.toDomain(updatedUser);
+  }
+
+  async getUsersByFilter(filters: any): Promise<User[]> {
+    const query: any = {};
+
+    if (filters.course) {
+      query['academicInfo.course'] = Number(filters.course);
+    }
+
+    if (filters.sessionNumber) {
+      query['academicInfo.sessionNumber'] = filters.sessionNumber;
+    }
+
+    if (filters.startDate || filters.endDate) {
+      query['academicInfo.enrollmentDate'] = {};
+      if (filters.startDate) {
+        query['academicInfo.enrollmentDate'].$gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        query['academicInfo.enrollmentDate'].$lte = new Date(filters.endDate);
+      }
+    }
+
+    if (filters.subdivision) {
+      query['academicInfo.subdivision'] = filters.subdivision;
+    }
+
+    const users = await this.userModel.find(query).exec();
+    return users.map((user) => UserMapper.toDomain(user));
   }
 
   async getUserList(): Promise<User[]> {
@@ -142,7 +208,7 @@ async updateTelegramInfo(
       {
         $set: {
           telegram_id: Number(data.telegram_id), // Преобразуем в число, как в вашем findByTgId
-          telegramUsername: data.telegramUsername,
+          telegram_username: data.telegramUsername,
           avatar: data.avatar,
         },
       },

@@ -17,5 +17,6 @@ export interface IUserRepository {
   }): Promise<User>;
 
   addRole(userId: string, role: string): Promise<User>;
-removeRole(userId: string, role: string): Promise<User>;
+  removeRole(userId: string, role: string): Promise<User>;
+  getUsersByFilter(filters: any): Promise<User[]>;
 }

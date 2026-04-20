@@ -40,7 +40,7 @@ export class MetricsService {
 
         // 3. Если запись найдена — просто выходим из метода, ничего не сохраняя
         if (isDuplicate) {
-            console.log(`[Metrics] Duplicate detected for session ${data.sessionId} on URL ${data.url}. Skipping...`);
+            //console.log(`[Metrics] Duplicate detected for session ${data.sessionId} on URL ${data.url}. Skipping...`);
             return null;
         }
 

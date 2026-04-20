@@ -43,7 +43,7 @@ export class MetricsController {
 
     await this.metricsService.logPageView(metricsRecord);
 
-    console.log('New visit saved to DB:', metricsRecord);
+    //console.log('New visit saved to DB:', metricsRecord);
     return { status: 'ok' };
   }
 
@@ -64,8 +64,8 @@ export class MetricsController {
       durationSeconds: data.durationSeconds,
     });
 
-    console.log(`--- Уход со страницы (сохранено в DB) ---`);
-    console.log(`Сессия: ${data.sessionId}, Время: ${data.durationSeconds} сек, URL: ${data.url}`);
+    //console.log(`--- Уход со страницы (сохранено в DB) ---`);
+    //console.log(`Сессия: ${data.sessionId}, Время: ${data.durationSeconds} сек, URL: ${data.url}`);
 
     return { status: 'ok' };
   }

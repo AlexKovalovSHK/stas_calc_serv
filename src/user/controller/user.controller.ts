@@ -19,6 +19,7 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { User } from '../domain/entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Roles } from 'src/auth/roles.decorator';
+import { CreateStudentDto } from '../dto/create-student.dto';
 
 @Controller('users') // Базовый путь: /users (множественное число)
 export class UserController {
@@ -72,13 +73,37 @@ export class UserController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     // return this.userService.remove(id);
-    return { message: 'User deleted successfully' };
+     return this.userService.delete(id);
+    //return { message: 'User deleted successfully' };
   }
 
   @Post(':id/make-admin')
   @Roles('Owner') // Только владелец может назначать админов
   async makeAdmin(@Param('id') id: string) {
     return this.userService.addRole(id, 'Admin');
+  }
+
+  @Post('register-student')
+  async registerStudent(@Body() createStudentDto: CreateStudentDto): Promise<User> {
+    const { academicInfo, ...userData } = createStudentDto;
+
+    // Формируем объект, который СТРОГО соответствует Partial<User>
+    const studentData: Partial<User> = {
+      ...userData,
+      role: ['Student'],
+      // Если academicInfo есть, маппим его вручную, превращая строку в Date
+      academicInfo: academicInfo ? {
+        subdivision: academicInfo.subdivision || 'CHSM',
+        course: Number(academicInfo.course),
+        sessionNumber: academicInfo.sessionNumber,
+        // Вот здесь происходит магия превращения строки в объект Date
+        enrollmentDate: academicInfo.enrollmentDate
+          ? new Date(academicInfo.enrollmentDate)
+          : new Date()
+      } : undefined
+    };
+
+    return this.userService.create(studentData);
   }
 
 }

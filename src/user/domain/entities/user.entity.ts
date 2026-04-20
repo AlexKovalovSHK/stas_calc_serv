@@ -14,6 +14,18 @@ export class User {
 
   resetCode?: string | null;
   resetCodeExpires?: Date | null;
+
+   academicInfo?: {
+    subdivision: string;
+    course: number;
+    sessionNumber: string;
+    enrollmentDate: Date;
+  };
+
+  // Удобный геттер для админки
+  isCHSMStudent(): boolean {
+    return this.role.includes('Student') && this.academicInfo?.subdivision === 'CHSM';
+  }
   
   constructor(partial: Partial<User>) {
     Object.assign(this, partial);

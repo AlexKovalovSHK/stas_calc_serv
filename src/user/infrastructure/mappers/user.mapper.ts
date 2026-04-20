@@ -15,6 +15,7 @@ export class UserMapper {
       telegramId: raw.telegram_id,
       telegramUsername: raw.telegram_username,
       avatar: raw.avatar,
+      academicInfo: raw.academicInfo,
     });
   }
 
@@ -30,6 +31,7 @@ export class UserMapper {
       telegram_id: ata.telegramId ?? ata.telegram_id,
       telegram_username: ata.telegramUsername ?? ata.telegram_username,
       avatar: ata.avatar,
+      academicInfo: ata.academicInfo,
     };
   }
 }
