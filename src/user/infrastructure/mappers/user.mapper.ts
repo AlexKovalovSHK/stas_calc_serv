@@ -19,7 +19,7 @@ export class UserMapper {
     });
   }
 
-  static toPersistence(domain: Partial<User>): any {
+  static toPersistence(domain: any): any {
     const persistence: any = {
       name: domain.name,
       surname: domain.surname,
@@ -28,15 +28,32 @@ export class UserMapper {
       role: domain.role,
       phone: domain.phone,
       avatar: domain.avatar,
-      // ВАЖНО: Маппим camelCase в snake_case, как в схеме
-      telegram_id: domain.telegramId || domain['telegram_id'],
-      telegram_username: domain.telegramUsername || domain['telegram_username'],
+      // Маппим поля телеграма
+      telegram_id: domain.telegramId || domain.telegram_id,
+      telegram_username: domain.telegramUsername || domain.telegram_username,
     };
 
+    // Если есть данные academicInfo, маппим их аккуратно
     if (domain.academicInfo) {
-      persistence.academicInfo = domain.academicInfo;
+      persistence.academicInfo = {
+        ...(domain.academicInfo.subdivision && { subdivision: domain.academicInfo.subdivision }),
+        ...(domain.academicInfo.course && { course: Number(domain.academicInfo.course) }),
+        ...(domain.academicInfo.sessionNumber && { sessionNumber: domain.academicInfo.sessionNumber }),
+        // Важно: преобразуем дату, если она пришла строкой из DTO
+        ...(domain.academicInfo.enrollmentDate && { 
+          enrollmentDate: new Date(domain.academicInfo.enrollmentDate) 
+        }),
+      };
     }
+
+    // Удаляем undefined поля, чтобы не затереть данные в базе при $set
+    Object.keys(persistence).forEach(key => {
+      if (persistence[key] === undefined) {
+        delete persistence[key];
+      }
+    });
 
     return persistence;
   }
+
 }
